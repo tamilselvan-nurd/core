@@ -26,12 +26,6 @@ def stub_blueprint_populate_autouse(stub_blueprint_populate: None) -> None:
     """Stub copying the blueprints to the config folder."""
 
 
-@pytest.fixture
-def calls(hass: HomeAssistant) -> list[ServiceCall]:
-    """Track calls to a mock service."""
-    return async_mock_service(hass, "test", "automation")
-
-
 @pytest.mark.parametrize(
     ("discovery_topic", "data"),
     [
