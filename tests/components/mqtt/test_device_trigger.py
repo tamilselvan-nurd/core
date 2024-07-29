@@ -17,11 +17,7 @@ from homeassistant.setup import async_setup_component
 
 from .test_common import help_test_unload_config_entry
 
-from tests.common import (
-    async_fire_mqtt_message,
-    async_get_device_automations,
-    async_mock_service,
-)
+from tests.common import async_fire_mqtt_message, async_get_device_automations
 from tests.typing import MqttMockHAClient, MqttMockHAClientGenerator, WebSocketGenerator
 
 
@@ -304,7 +300,7 @@ async def test_update_remove_triggers(
 async def test_if_fires_on_mqtt_message(
     hass: HomeAssistant,
     device_registry: dr.DeviceRegistry,
-    calls: list[ServiceCall],
+    service_calls: list[ServiceCall],
     mqtt_mock_entry: MqttMockHAClientGenerator,
 ) -> None:
     """Test triggers firing."""
@@ -370,20 +366,20 @@ async def test_if_fires_on_mqtt_message(
     # Fake short press.
     async_fire_mqtt_message(hass, "foobar/triggers/button1", "short_press")
     await hass.async_block_till_done()
-    assert len(calls) == 1
-    assert calls[0].data["some"] == "short_press"
+    assert len(service_calls) == 1
+    assert service_calls[0].data["some"] == "short_press"
 
     # Fake long press.
     async_fire_mqtt_message(hass, "foobar/triggers/button2", "long_press")
     await hass.async_block_till_done()
-    assert len(calls) == 2
-    assert calls[1].data["some"] == "long_press"
+    assert len(service_calls) == 2
+    assert service_calls[1].data["some"] == "long_press"
 
 
 async def test_if_discovery_id_is_prefered(
     hass: HomeAssistant,
     device_registry: dr.DeviceRegistry,
-    calls: list[ServiceCall],
+    service_calls: list[ServiceCall],
     mqtt_mock_entry: MqttMockHAClientGenerator,
 ) -> None:
     """Test if discovery is preferred over referencing by type/subtype.
@@ -457,21 +453,21 @@ async def test_if_discovery_id_is_prefered(
     # Fake short press, matching on type and subtype
     async_fire_mqtt_message(hass, "foobar/triggers/button1", "short_press")
     await hass.async_block_till_done()
-    assert len(calls) == 1
-    assert calls[0].data["some"] == "short_press"
+    assert len(service_calls) == 1
+    assert service_calls[0].data["some"] == "short_press"
 
     # Fake long press, matching on discovery_id
-    calls.clear()
+    service_calls.clear()
     async_fire_mqtt_message(hass, "foobar/triggers/button1", "long_press")
     await hass.async_block_till_done()
-    assert len(calls) == 1
-    assert calls[0].data["some"] == "long_press"
+    assert len(service_calls) == 1
+    assert service_calls[0].data["some"] == "long_press"
 
 
 async def test_non_unique_triggers(
     hass: HomeAssistant,
     device_registry: dr.DeviceRegistry,
-    calls: list[ServiceCall],
+    service_calls: list[ServiceCall],
     mqtt_mock_entry: MqttMockHAClientGenerator,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
@@ -548,20 +544,20 @@ async def test_non_unique_triggers(
     # and triggers both attached instances.
     async_fire_mqtt_message(hass, "foobar/triggers/button1", "short_press")
     await hass.async_block_till_done()
-    assert len(calls) == 2
-    all_calls = {calls[0].data["some"], calls[1].data["some"]}
+    assert len(service_calls) == 2
+    all_calls = {service_calls[0].data["some"], service_calls[1].data["some"]}
     assert all_calls == {"press1", "press2"}
 
     # Trigger second config references to same trigger
     # and triggers both attached instances.
     async_fire_mqtt_message(hass, "foobar/triggers/button2", "long_press")
     await hass.async_block_till_done()
-    assert len(calls) == 2
-    all_calls = {calls[0].data["some"], calls[1].data["some"]}
+    assert len(service_calls) == 2
+    all_calls = {service_calls[0].data["some"], service_calls[1].data["some"]}
     assert all_calls == {"press1", "press2"}
 
     # Removing the first trigger will clean up
-    calls.clear()
+    service_calls.clear()
     async_fire_mqtt_message(hass, "homeassistant/device_automation/bla1/config", "")
     await hass.async_block_till_done()
     await hass.async_block_till_done()
@@ -569,13 +565,13 @@ async def test_non_unique_triggers(
         "Device trigger ('device_automation', 'bla1') has been removed" in caplog.text
     )
     async_fire_mqtt_message(hass, "foobar/triggers/button1", "short_press")
-    assert len(calls) == 0
+    assert len(service_calls) == 0
 
 
 async def test_if_fires_on_mqtt_message_template(
     hass: HomeAssistant,
     device_registry: dr.DeviceRegistry,
-    calls: list[ServiceCall],
+    service_calls: list[ServiceCall],
     mqtt_mock_entry: MqttMockHAClientGenerator,
 ) -> None:
     """Test triggers firing with a message template and a shared topic."""
@@ -643,20 +639,20 @@ async def test_if_fires_on_mqtt_message_template(
     # Fake short press.
     async_fire_mqtt_message(hass, "foobar/triggers/button4", '{"button":"short_press"}')
     await hass.async_block_till_done()
-    assert len(calls) == 1
-    assert calls[0].data["some"] == "short_press"
+    assert len(service_calls) == 1
+    assert service_calls[0].data["some"] == "short_press"
 
     # Fake long press.
     async_fire_mqtt_message(hass, "foobar/triggers/button4", '{"button":"long_press"}')
     await hass.async_block_till_done()
-    assert len(calls) == 2
-    assert calls[1].data["some"] == "long_press"
+    assert len(service_calls) == 2
+    assert service_calls[1].data["some"] == "long_press"
 
 
 async def test_if_fires_on_mqtt_message_late_discover(
     hass: HomeAssistant,
     device_registry: dr.DeviceRegistry,
-    calls: list[ServiceCall],
+    service_calls: list[ServiceCall],
     mqtt_mock_entry: MqttMockHAClientGenerator,
 ) -> None:
     """Test triggers firing of MQTT device triggers discovered after setup."""
@@ -730,20 +726,20 @@ async def test_if_fires_on_mqtt_message_late_discover(
     # Fake short press.
     async_fire_mqtt_message(hass, "foobar/triggers/button1", "short_press")
     await hass.async_block_till_done()
-    assert len(calls) == 1
-    assert calls[0].data["some"] == "short_press"
+    assert len(service_calls) == 1
+    assert service_calls[0].data["some"] == "short_press"
 
     # Fake long press.
     async_fire_mqtt_message(hass, "foobar/triggers/button2", "long_press")
     await hass.async_block_till_done()
-    assert len(calls) == 2
-    assert calls[1].data["some"] == "long_press"
+    assert len(service_calls) == 2
+    assert service_calls[1].data["some"] == "long_press"
 
 
 async def test_if_fires_on_mqtt_message_after_update(
     hass: HomeAssistant,
     device_registry: dr.DeviceRegistry,
-    calls: list[ServiceCall],
+    service_calls: list[ServiceCall],
     mqtt_mock_entry: MqttMockHAClientGenerator,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
@@ -802,7 +798,7 @@ async def test_if_fires_on_mqtt_message_after_update(
     # Fake short press.
     async_fire_mqtt_message(hass, "foobar/triggers/button1", "")
     await hass.async_block_till_done()
-    assert len(calls) == 1
+    assert len(service_calls) == 1
 
     # Update the trigger with existing type/subtype change
     async_fire_mqtt_message(hass, "homeassistant/device_automation/bla2/config", data1)
@@ -813,29 +809,29 @@ async def test_if_fires_on_mqtt_message_after_update(
     async_fire_mqtt_message(hass, "homeassistant/device_automation/bla1/config", data3)
     await hass.async_block_till_done()
 
-    calls.clear()
+    service_calls.clear()
     async_fire_mqtt_message(hass, "foobar/triggers/button1", "")
     await hass.async_block_till_done()
-    assert len(calls) == 0
+    assert len(service_calls) == 0
 
-    calls.clear()
+    service_calls.clear()
     async_fire_mqtt_message(hass, "foobar/triggers/buttonOne", "")
     await hass.async_block_till_done()
-    assert len(calls) == 1
+    assert len(service_calls) == 1
 
     # Update the trigger with same topic
     async_fire_mqtt_message(hass, "homeassistant/device_automation/bla1/config", data3)
     await hass.async_block_till_done()
 
-    calls.clear()
+    service_calls.clear()
     async_fire_mqtt_message(hass, "foobar/triggers/button1", "")
     await hass.async_block_till_done()
-    assert len(calls) == 0
+    assert len(service_calls) == 0
 
-    calls.clear()
+    service_calls.clear()
     async_fire_mqtt_message(hass, "foobar/triggers/buttonOne", "")
     await hass.async_block_till_done()
-    assert len(calls) == 1
+    assert len(service_calls) == 1
 
 
 async def test_no_resubscribe_same_topic(
@@ -888,7 +884,7 @@ async def test_no_resubscribe_same_topic(
 async def test_not_fires_on_mqtt_message_after_remove_by_mqtt(
     hass: HomeAssistant,
     device_registry: dr.DeviceRegistry,
-    calls: list[ServiceCall],
+    service_calls: list[ServiceCall],
     mqtt_mock_entry: MqttMockHAClientGenerator,
 ) -> None:
     """Test triggers not firing after removal."""
@@ -931,7 +927,7 @@ async def test_not_fires_on_mqtt_message_after_remove_by_mqtt(
     # Fake short press.
     async_fire_mqtt_message(hass, "foobar/triggers/button1", "short_press")
     await hass.async_block_till_done()
-    assert len(calls) == 1
+    assert len(service_calls) == 1
 
     # Remove the trigger
     async_fire_mqtt_message(hass, "homeassistant/device_automation/bla1/config", "")
@@ -939,7 +935,7 @@ async def test_not_fires_on_mqtt_message_after_remove_by_mqtt(
 
     async_fire_mqtt_message(hass, "foobar/triggers/button1", "short_press")
     await hass.async_block_till_done()
-    assert len(calls) == 1
+    assert len(service_calls) == 1
 
     # Rediscover the trigger
     async_fire_mqtt_message(hass, "homeassistant/device_automation/bla1/config", data1)
@@ -947,14 +943,14 @@ async def test_not_fires_on_mqtt_message_after_remove_by_mqtt(
 
     async_fire_mqtt_message(hass, "foobar/triggers/button1", "short_press")
     await hass.async_block_till_done()
-    assert len(calls) == 2
+    assert len(service_calls) == 2
 
 
 async def test_not_fires_on_mqtt_message_after_remove_from_registry(
     hass: HomeAssistant,
     hass_ws_client: WebSocketGenerator,
     device_registry: dr.DeviceRegistry,
-    calls: list[ServiceCall],
+    service_calls: list[ServiceCall],
     mqtt_mock_entry: MqttMockHAClientGenerator,
 ) -> None:
     """Test triggers not firing after removal."""
@@ -1002,7 +998,7 @@ async def test_not_fires_on_mqtt_message_after_remove_from_registry(
     # Fake short press.
     async_fire_mqtt_message(hass, "foobar/triggers/button1", "short_press")
     await hass.async_block_till_done()
-    assert len(calls) == 1
+    assert len(service_calls) == 1
 
     # Remove MQTT from the device
     mqtt_config_entry = hass.config_entries.async_entries(DOMAIN)[0]
@@ -1014,7 +1010,7 @@ async def test_not_fires_on_mqtt_message_after_remove_from_registry(
 
     async_fire_mqtt_message(hass, "foobar/triggers/button1", "short_press")
     await hass.async_block_till_done()
-    assert len(calls) == 1
+    assert len(service_calls) == 1
 
 
 async def test_attach_remove(
@@ -1704,7 +1700,7 @@ async def test_trigger_debug_info(
 
 async def test_unload_entry(
     hass: HomeAssistant,
-    calls: list[ServiceCall],
+    service_calls: list[ServiceCall],
     device_registry: dr.DeviceRegistry,
     mqtt_mock: MqttMockHAClient,
 ) -> None:
@@ -1747,7 +1743,7 @@ async def test_unload_entry(
     # Fake short press 1
     async_fire_mqtt_message(hass, "foobar/triggers/button1", "short_press")
     await hass.async_block_till_done()
-    assert len(calls) == 1
+    assert len(service_calls) == 1
 
     await help_test_unload_config_entry(hass)
 
@@ -1756,7 +1752,7 @@ async def test_unload_entry(
     await hass.async_block_till_done()
     async_fire_mqtt_message(hass, "foobar/triggers/button1", "short_press")
     await hass.async_block_till_done()
-    assert len(calls) == 1
+    assert len(service_calls) == 1
 
     # Start entry again
     mqtt_entry = hass.config_entries.async_entries("mqtt")[0]
@@ -1767,4 +1763,4 @@ async def test_unload_entry(
     await hass.async_block_till_done()
     async_fire_mqtt_message(hass, "foobar/triggers/button1", "short_press")
     await hass.async_block_till_done()
-    assert len(calls) == 2
+    assert len(service_calls) == 2
