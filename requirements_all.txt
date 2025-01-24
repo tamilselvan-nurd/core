@@ -2643,6 +2643,9 @@ smhi-pkg==1.0.16
 # homeassistant.components.snapcast
 snapcast==2.3.6
 
+# homeassistant.components.ezlohacloud
+snitun==0.39.1
+
 # homeassistant.components.sonos
 soco==0.30.4
 
