@@ -1,10 +1,11 @@
-import voluptuous as vol
 import logging
+
+import voluptuous as vol
+
 from homeassistant import config_entries
 from homeassistant.core import callback
 
 from .const import DOMAIN
-from .api import authenticate
 from .options_flow import EzloOptionsFlowHandler  # Import options flow
 
 _LOGGER = logging.getLogger(__name__)
@@ -17,7 +18,7 @@ class EzloConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     MINOR_VERSION = 1
 
     async def async_step_user(self, user_input=None):
-        """Initial setup form."""
+        # """Initial setup form."""
         errors = {}
 
         if user_input is not None:
